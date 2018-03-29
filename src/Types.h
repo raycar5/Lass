@@ -1,60 +1,43 @@
 #pragma once
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Value.h>
-#include <string>
+#include <stdlib.h>
 
-namespace lass {
-class LassValue {
-public:
-  virtual ~LassValue() {}
-  virtual void codegen(llvm::LLVMContext context,
-                       llvm::IRBuilder<> builder) const = 0;
-  virtual std::string print(bool pretty) const = 0;
-};
+enum LASSType { LASSLong = 1, LASSSymbol = 2, LASSList = 3 };
+typedef struct LASSValue {
+  enum LASSType Type;
+} * LASSValueRef;
 
-class LassLong : public LassValue {
-public:
-  explicit LassLong(long value) : value(value) {}
-  virtual void codegen(llvm::LLVMContext context,
-                       llvm::IRBuilder<> builder) const override;
-  virtual std::string print(bool pretty) const override {
-    return "Long:" + std::to_string(value);
-  }
+// LASSLong
+typedef struct LASSLong {
+  struct LASSValue Base;
+  long Value;
+} * LASSLongRef;
+LASSLongRef LASSLongCreate(long Value);
+char *LASSLongPrint(LASSLongRef Val);
 
-private:
-  long value;
-};
-class LassSymbol : public LassValue {
-public:
-  explicit LassSymbol(std::string name) : name(name) {}
+// LASSSymbol
+typedef struct LASSSymbol {
+  struct LASSValue Base;
+  const char *Name;
+} * LASSSymbolRef;
+LASSSymbolRef LASSSymbolCreate(const char *Name);
+char *LASSSymbolPrint(LASSSymbolRef Val);
 
-  virtual void codegen(llvm::LLVMContext context,
-                       llvm::IRBuilder<> builder) const override;
-  virtual std::string print(bool pretty) const override {
-    return "Symbol:" + name;
-  }
+// LASSList
+typedef struct LASSListNode {
+  LASSValueRef Value;
+  struct LASSListNode *Next;
+} * LASSListNodeRef;
+LASSListNodeRef LASSListNodeCreate(LASSValueRef Value, LASSListNodeRef Next);
 
-private:
-  std::string name;
-};
-class LassList : public LassValue {
-public:
-  void add(std::unique_ptr<LassValue> value) {
-    list.push_back(std::move(value));
-  }
-  LassValue *get(size_t index) { return list[index].get(); }
-  virtual std::string print(bool pretty) const override {
-    std::string s = "List:(";
-    for (size_t i = 0; i < list.size(); ++i) {
-      s += list[i]->print(pretty) + " ";
-    }
-    return s + ")";
-  }
-  virtual void codegen(llvm::LLVMContext context,
-                       llvm::IRBuilder<> builder) const override;
+typedef struct LASSList {
+  struct LASSValue Base;
+  LASSListNodeRef Front;
+  LASSListNodeRef Back;
+  size_t Count;
+} * LASSListRef;
+LASSListRef LASSListCreate();
+void LASSListAdd(LASSListRef List, LASSValueRef Value);
+char *LASSListPrint(LASSListRef Val);
 
-private:
-  std::vector<std::unique_ptr<LassValue>> list;
-};
-
-} // namespace lass
+// General functions
+char *LASSPrintValueToString(LASSValueRef Val);

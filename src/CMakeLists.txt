@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
-file(GLOB_RECURSE LASSLIB_FILES "Types.*")
+file(GLOB_RECURSE LASSLIB_FILES
+"Reader.*"
+"Types.*")
 add_library(lasslib ${LASSLIB_FILES})
-target_compile_features(lasslib PRIVATE cxx_auto_type)
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -11,4 +12,5 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs support core irreader)
 
-target_link_libraries(lasslib ${llvm_libs})
+add_subdirectory(CppUtils)
+target_link_libraries(lasslib lass_cpp_utils ${llvm_libs})
